@@ -92,6 +92,7 @@ NSArray *ClassGetSubclasses(Class parentClass)
     NSLog(@"XCTest: Running Unit Tests");
     NSUInteger testCaseFailureCount = 0;
     NSUInteger testCaseSuccessCount = 0;
+    NSMutableDictionary *failedTests = [NSMutableDictionary dictionary];
     
     NSArray *testCaseClasses = ClassGetSubclasses([XCTestCase class]);
     for (Class testCaseClass in testCaseClasses)
@@ -163,6 +164,11 @@ NSArray *ClassGetSubclasses(Class parentClass)
                                 if (assertionFailureCount > 0) {
                                     testSucceeded = NO;
                                     NSLog(@"XCTest:     %@ FAILED", methodName);
+                                    if ([failedTests objectForKey:className] != nil){
+                                        [[failedTests objectForKey:className] addObject:methodName];
+                                    } else {
+                                        [failedTests setObject:[NSMutableArray arrayWithObjects:methodName, nil] forKey:className];
+                                    }
                                 }
                             }
                         }
@@ -188,6 +194,13 @@ NSArray *ClassGetSubclasses(Class parentClass)
             else if (methodFailureCount > 0) {
                 testCaseFailureCount++;
                 NSLog(@"XCTest:   %@: %lu/%lu tests FAILED", className, methodFailureCount, methodFailureCount + methodSuccessCount);
+                NSArray *sortedFailureClasses = [[failedTests allKeys] sortedArrayUsingSelector:@selector(compare:)];
+                    for (NSString *key in sortedFailureClasses) {
+                        NSArray *failedMethods = [failedTests objectForKey:key];
+                        for (NSString *method in failedMethods) {
+                        NSLog(@"XCTest:     %@.%@ FAILED", key, method);
+                    }
+                }
             } else {
                 testCaseSuccessCount++;
                 if (methodSuccessCount > 0) {
